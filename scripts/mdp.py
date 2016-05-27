@@ -127,8 +127,6 @@ class MDP:
 				mmap[pit_r][pit_c] = "PIT"
 			else:
 				mmap[pit_r][pit_c] = self.pitRwrd	
-	
-
 
 	def isLessThanThrshldDif(self):
 		
