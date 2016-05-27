@@ -28,19 +28,9 @@ class MDP:
 		self.goalRwrd = self.config["reward_for_reaching_goal"]
 		self.pitRwrd = self.config["reward_for_falling_in_pit"]
 
-                #self.resPub = rospy.Publisher("/results/policy_list", AStarPath, queue_size=10)
-                #self.resPub.publish([1,1])
                 self.row = self.config["map_size"][0]
                 self.column = self.config["map_size"][1]
 		
-		'''
-		self.tempRowP = []
-		
-		for i in range( (self.column) ):
-			self.tempRowP.append("")
-		for j in range( (self.row)):
-                        self.policyMap.append(deepcopy(self.tempRowP) )
- 		'''
 		self.start = self.config["start"]
                 self.goal = self.config["goal"]
                 self.goal_r = self.goal[0]
@@ -72,13 +62,20 @@ class MDP:
 		
 		self.MDP_Algo()	
 		
+                self.resPub = rospy.Publisher("/results/policy_list", PolicyList, queue_size=10)
+		policyList = PolicyList()
+	
 		policyL = []
 
 		for r in range( len(self.policyMap)):
 			for c in range(len(self.policyMap[r]) ):
 				policyL.append(self.policyMap[r][c])	
-      		print policyL 
+                
+		#print policyL 
 		
+		policyList.data = policyL
+		rospy.sleep(0.3)
+		self.resPub.publish(policyList)
  
 	def is_InMap(self, curr_r, curr_c):
                 c_Bound = self.column - 1
