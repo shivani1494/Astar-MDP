@@ -33,10 +33,12 @@ class MDP:
                 self.column = self.config["map_size"][1]
     
                 self.tempRow = []
-                self.mmap1 = []
+                self.tempRowP = []
+		self.mmap1 = []
                 #creating the map 
                 for i in range( (self.column) ):
-                        self.tempRow.append([0 , 0 , 0, 0])
+                        self.tempRowP.append("")
+                        self.tempRow.append(0)
 
                 for j in range( (self.row)):
                         self.mmap1.append(deepcopy(self.tempRow) )
@@ -45,8 +47,12 @@ class MDP:
 
                 for j in range( (self.row)):
                         self.mmap2.append(deepcopy(self.tempRow) )
-
-                self.start = self.config["start"]
+		
+		self.policyMap = []
+		for j in range( (self.row)):
+                        self.policyMap.append(deepcopy(self.tempRowP) )
+                
+		self.start = self.config["start"]
                 self.goal = self.config["goal"]
                 self.goal_r = self.goal[0]
                 self.goal_c = self.goal[1]
@@ -123,7 +129,7 @@ class MDP:
 				actnRwrd = []
 				for a in range( len ( self.actions ) ):
 					rwrd_i = []
-					rwrd = 0
+					
 					for d in range(len(self.actions[a]) ):
 
 						if is_Goal(r + act[a][d][0], c + act[a][d][1] ):
@@ -165,13 +171,13 @@ class MDP:
 						maxRwrdA = mr
 						maxRwrd = actnRwrd[mr]
 
-				mmap2[r][c] = maxRwrd
+				self.mmap2[r][c] = maxRwrd
 				if i == 0:
-					mmap3[r][c] = "N"
+					self.policyMap[r][c] = "N"
 				elif i == 1:
-					mmap3[r][c] = "S"
+					self.policyMap[r][c] = "S"
 				elif i == 2:
-					mmap3[r][c] = "W"
+					self.policyMap[r][c] = "W"
 				else:
-					mmap3[r][c] = "E"
+					self.policyMap[r][c] = "E"
 
