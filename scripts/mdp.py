@@ -33,15 +33,15 @@ class MDP:
                 self.column = self.config["map_size"][1]
     
                 self.tempRow = []
-                self.tempRowP = []
+		self.tempRowP = []
 		self.mmap1 = []
                 #creating the map 
-                for i in range( (self.column) ):
-                        self.tempRowP.append("")
-                        self.tempRow.append(0)
-
-                for j in range( (self.row)):
-                        self.mmap1.append(deepcopy(self.tempRow) )
+		for i in range( (self.column) ):
+			self.tempRowP.append("")
+			self.tempRow.append(0)
+	
+		for j in range( (self.row)):
+			self.mmap1.append(deepcopy(self.tempRow) )
 
                 self.mmap2 = []
 
@@ -113,8 +113,30 @@ class MDP:
 			pitY = self.pits[i][1]	
 			self.mmap1[pitY][pitX] = self.pitRwrd	
 			self.mmap2[pitY][pitX] = self.pitRwrd	
+		
+		for itr in range(self.maxI):
+			calculateNewRewardsPolicies()
+			print "mmap1"
+			print self.mmap1
+			print "mmap2"	
+			print self.mmap2	
+			
+			tempMap = deepcopy(self.mmap1)
+			self.mmap1 = deepcopy(self.mmap2)
 
-		for r in range ( len (self.mmap) ):
+			self.mmap2 = []
+
+			for i in range( (self.column) ):
+				tempRow.append(0)
+			
+			for j in range( (self.row)):
+				self.mmap1.append(deepcopy(self.tempRow) )
+
+			#what happens in the last iteration?
+	
+	def calculateNewRewardsPolicies(self):
+
+		for r in range ( len (self.mmap1) ):
 			
 			for c in range ( len (self.mmap[i]) ):
 					#forward   backward   left      right 
@@ -128,35 +150,36 @@ class MDP:
 				#for every action there is one reward
 				actnRwrd = []
 				for a in range( len ( self.actions ) ):
-					rwrd_i = []
+					probRwrd = []	
+					rwrd_allDrctns_gvnActn.append = []
 					
 					for d in range(len(self.actions[a]) ):
 
 						if is_Goal(r + act[a][d][0], c + act[a][d][1] ):
 						#prev_reward + goalRwrd					
 							rwrd = dF*self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + goalRwrd
-							nlocP = [ [r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
+							#nlocP = [ r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
 					
 						elif self.is_Pit(r + act[a][d][0], c + act[a][d][1]):
 						
 							rwrd = dF*self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + pitRwrd
-							nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
+							#nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
 							
 						elif self.is_Wall(r + act[a][d][0], c + act[a][d][1]):
 						#stay put, so get the prev reward of staying put + wallRwrd
 							rwrd = dF*self.mmap1[r][c] + wallRwrd
-							nloc_i.append([r, c])
+							#nloc_i.append([r, c])
 						elif self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
-
-							nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
+							
+							#nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
 							rwrd = dF*self.mmap1[r][c] + stepRwrd
 						elif not self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
 	
-							nloc_i.append( [r, c] )
+							#nloc_i.append( [r, c] )
 							rwrd = dF*stepRwrd
 						
 						rwrd_allDrctns_gvnActn.append(rwrd)
-						probRwrd.append(rwrd_allDrctns_gvnActn*probAct[d])							
+						probRwrd.append(rwrd*probAct[d])							
 					actionRwrd_i = 0
 					for pr in range( len(probRwrd) ):
 						actionRwrd_i += probRwrd[pr]
@@ -164,20 +187,19 @@ class MDP:
 					print "len(actnRwrd)"
 					print len(actnRwrd)
 
-
 				maxRwrd = 0
+				maxRwrdA = 0
 				for mr in range(len(actnRwrd)):
 					if actnRwrd[mr] > maxRwrd:
 						maxRwrdA = mr
 						maxRwrd = actnRwrd[mr]
 
 				self.mmap2[r][c] = maxRwrd
-				if i == 0:
+				if maxRwrdA == 0:
 					self.policyMap[r][c] = "N"
-				elif i == 1:
+				elif maxRwrdA == 1:
 					self.policyMap[r][c] = "S"
-				elif i == 2:
+				elif maxRwrdA == 2:
 					self.policyMap[r][c] = "W"
 				else:
 					self.policyMap[r][c] = "E"
-

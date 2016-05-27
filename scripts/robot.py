@@ -7,12 +7,15 @@ import json
 import image_util
 from read_config import read_config
 import astar as a
-
+import mdp
 class Robot():
 	def __init__(self):
 		rospy.init_node('Robot')
-		print ("inside Robot.py")
+		print ("inside Robot.py: before A*")
 		ast = a.RAstar()
+		print ("inside Robot.py: after A* before MDP")
+		mdp_algo = mdp.MDP()
+		print ("inside Robot.py: after MDP")
 		self.simPub = rospy.Publisher("/sim_complete", Bool, queue_size=10)
 		rospy.sleep(5)
 		self.simPub.publish(True)               
