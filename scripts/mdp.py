@@ -9,7 +9,6 @@ import json
 import image_util
 from read_config import read_config
 
-
 class MDP:
 
 	def __init__(self):
@@ -45,11 +44,8 @@ class MDP:
 		for j in range( (self.row)):
 			self.mmap1.append(deepcopy(self.tempRow) )
 
-                self.mmap2 = []
+                self.mmap2 = deepcopy(self.mmap1) 
 
-                for j in range( (self.row)):
-                        self.mmap2.append(deepcopy(self.tempRow) )
-		
 		self.policyMap = []
 		for j in range( (self.row)):
                         self.policyMap.append(deepcopy(self.tempRowP) )
@@ -105,7 +101,6 @@ class MDP:
 
 	def MDP_Algo(self):
 		
-
 		self.mmap1[self.goal_r][self.goal_c] = self.goalRwrd	
 		self.mmap2[self.goal_r][self.goal_c] = self.goalRwrd	
 
@@ -121,26 +116,15 @@ class MDP:
 			self.mmap1[pit_r][pit_c] = self.pitRwrd	
 			self.mmap2[pit_r][pit_c] = self.pitRwrd	
 		
-		#print np.reshape(self.mmap1, (self.row, self.column))
-		#print "\n"
-		#print np.reshape(self.mmap2, (self.row, self.column))
-		#print "\n"
-		
-		#self.calculateNewRewardsPolicies()
-		#self.mmap1 = deepcopy(self.mmap2)
-		
-		#self.calculateNewRewardsPolicies()
-		#self.mmap1 = deepcopy(self.mmap2)
-		
 		#self.calculateNewRewardsPolicies()
 		#self.mmap1 = deepcopy(self.mmap2)
 		
 		for itr in range(self.maxI):
 			self.calculateNewRewardsPolicies()
-			#print "mmap1"
-			#print self.mmap1
-			#print "mmap2"	
-			#print self.mmap2	
+			#print np.reshape(self.mmap1, (self.row, self.column))
+			#print "\n"
+			#print np.reshape(self.mmap2, (self.row, self.column))
+			#print "\n"
 			
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
@@ -156,11 +140,6 @@ class MDP:
 			#what happens in the last iteration?
 	def calculateNewRewardsPolicies(self):
 		dF = self.config["discount_factor"]
-		
-		#print np.reshape(self.mmap1, (self.row, self.column))
-		#print "\n"
-		#print np.reshape(self.mmap2, (self.row, self.column))
-		#print "\n"
 		
 		for r in range ( len (self.mmap1) ):
 			

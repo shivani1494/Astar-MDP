@@ -161,6 +161,7 @@ class RAstar:
 					#print optimalPath[i]
 					astar_path = AStarPath()
 					astar_path.data = optimalPath[i]
+					rospy.sleep(0.5)
 					self.resPub.publish(astar_path)		
 		
 				break
