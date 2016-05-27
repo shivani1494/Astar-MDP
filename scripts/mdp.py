@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+import numpy as np
+import math as m
+from copy import deepcopy
 import rospy
 from std_msgs.msg import String, Float32, Bool
 from cse_190_assi_3.msg import AStarPath, PolicyList
@@ -13,14 +15,14 @@ class MDP:
 	def __init__(self):
 		self.config = read_config()
 
-		self.probF = self.config["probability_move_forward"]
-		self.probB = self.config["probability_move_backward"]
-		self.probL = self.config["probability_move_left"]
-		self.probR = self.config["probability_move_right"]
+		self.probF = self.config["prob_move_forward"]
+		self.probB = self.config["prob_move_backward"]
+		self.probL = self.config["prob_move_left"]
+		self.probR = self.config["prob_move_right"]
 		self.probAct = [ self.probF, self.probB, self.probL, self.probR]
 
 		self.maxI = self.config["max_iterations"]
-		self.threshDiff = self.config["thershold_difference"]
+		self.threshDiff = self.config["threshold_difference"]
 		
 		self.stepRwrd = self.config["reward_for_each_step"]
 		self.wallRwrd = self.config["reward_for_hitting_wall"]
@@ -51,7 +53,13 @@ class MDP:
 		self.policyMap = []
 		for j in range( (self.row)):
                         self.policyMap.append(deepcopy(self.tempRowP) )
-                
+               	
+		#print np.reshape(self.mmap1, (self.row, self.column))
+		#print "\n"
+		#print np.reshape(self.mmap2, (self.row, self.column))
+		#print "\n"
+		#print np.reshape(self.policyMap, (self.row, self.column))
+ 
 		self.start = self.config["start"]
                 self.goal = self.config["goal"]
                 self.goal_r = self.goal[0]
@@ -61,7 +69,7 @@ class MDP:
                 self.pits = self.config["pits"]
                 self.walls = self.config["walls"]
 	
-		self.actions = [ [[1, 0 ], [-1,0], [0, -1], [0, 1]],
+		self.act = [ [[1, 0 ], [-1,0], [0, -1], [0, 1]],
 				 [[-1, 0],[1, 0], [0,1], [0,-1]],
 				 [[0,-1], [0,1], [-1,0], [1,0]],
 				 [[0,1],[0, -1],[1, 0],[-1, 0]]
@@ -72,7 +80,7 @@ class MDP:
 				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
 				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 		
-		
+		self.MDP_Algo()		
         
 	def is_InMap(self, curr_r, curr_c):
                 c_Bound = self.column - 1
@@ -97,48 +105,73 @@ class MDP:
 
 	def MDP_Algo(self):
 		
-		dF = self.config["discount_factor"]
 
 		self.mmap1[self.goal_r][self.goal_c] = self.goalRwrd	
 		self.mmap2[self.goal_r][self.goal_c] = self.goalRwrd	
 
 		for i in range(len(self.walls) ):
-			wallX = self.walls[i][0]	
-			wallY = self.walls[i][1]	
-			self.mmap1[wallY][wallX] = self.wallRwrd	
-			self.mmap2[wallY][wallX] = self.wallRwrd	
+			wall_r = self.walls[i][0]	
+			wall_c = self.walls[i][1]	
+			self.mmap1[wall_r][wall_c] = self.wallRwrd	
+			self.mmap2[wall_r][wall_c] = self.wallRwrd	
 				
 		for i in range(len(self.pits) ):
-			pitX = self.pits[i][0]	
-			pitY = self.pits[i][1]	
-			self.mmap1[pitY][pitX] = self.pitRwrd	
-			self.mmap2[pitY][pitX] = self.pitRwrd	
+			pit_r = self.pits[i][0]	
+			pit_c = self.pits[i][1]	
+			self.mmap1[pit_r][pit_c] = self.pitRwrd	
+			self.mmap2[pit_r][pit_c] = self.pitRwrd	
+		
+		#print np.reshape(self.mmap1, (self.row, self.column))
+		#print "\n"
+		#print np.reshape(self.mmap2, (self.row, self.column))
+		#print "\n"
+		
+		#self.calculateNewRewardsPolicies()
+		#self.mmap1 = deepcopy(self.mmap2)
+		
+		#self.calculateNewRewardsPolicies()
+		#self.mmap1 = deepcopy(self.mmap2)
+		
+		#self.calculateNewRewardsPolicies()
+		#self.mmap1 = deepcopy(self.mmap2)
 		
 		for itr in range(self.maxI):
-			calculateNewRewardsPolicies()
-			print "mmap1"
-			print self.mmap1
-			print "mmap2"	
-			print self.mmap2	
+			self.calculateNewRewardsPolicies()
+			#print "mmap1"
+			#print self.mmap1
+			#print "mmap2"	
+			#print self.mmap2	
 			
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
 
 			self.mmap2 = []
-
+			tempRow = []
 			for i in range( (self.column) ):
 				tempRow.append(0)
 			
 			for j in range( (self.row)):
-				self.mmap1.append(deepcopy(self.tempRow) )
+				self.mmap2.append(deepcopy(tempRow) )
 
 			#what happens in the last iteration?
-	
 	def calculateNewRewardsPolicies(self):
-
+		dF = self.config["discount_factor"]
+		
+		#print np.reshape(self.mmap1, (self.row, self.column))
+		#print "\n"
+		#print np.reshape(self.mmap2, (self.row, self.column))
+		#print "\n"
+		
 		for r in range ( len (self.mmap1) ):
 			
-			for c in range ( len (self.mmap[i]) ):
+			for c in range ( len (self.mmap1[r]) ):
+			
+				if self.is_Pit(r,c):
+					continue
+				if self.is_Wall(r,c):
+					continue
+				if self.goal_r == r and self.goal_c ==  c:
+					continue
 					#forward   backward   left      right 
 				#north  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
 				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
@@ -149,43 +182,42 @@ class MDP:
 
 				#for every action there is one reward
 				actnRwrd = []
-				for a in range( len ( self.actions ) ):
+				for a in range( len ( self.act ) ):
+					rwrd_allDrctns_gvnActn = []
 					probRwrd = []	
-					rwrd_allDrctns_gvnActn.append = []
-					
-					for d in range(len(self.actions[a]) ):
+					for d in range(len(self.act[a]) ):
 
-						if is_Goal(r + act[a][d][0], c + act[a][d][1] ):
+						if self.goal_r == r + self.act[a][d][0] and self.goal_c ==  c + self.act[a][d][1]:
 						#prev_reward + goalRwrd					
-							rwrd = dF*self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + goalRwrd
+							rwrd = dF*self.mmap1[r + self.act[a][d][0]][c + self.act[a][d][1]] + self.goalRwrd
 							#nlocP = [ r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
 					
-						elif self.is_Pit(r + act[a][d][0], c + act[a][d][1]):
+						elif self.is_Pit(r + self.act[a][d][0], c + self.act[a][d][1]):
 						
-							rwrd = dF*self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + pitRwrd
+							rwrd = dF*self.mmap1[r + self.act[a][d][0]][c + self.act[a][d][1]] + self.pitRwrd
 							#nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
 							
-						elif self.is_Wall(r + act[a][d][0], c + act[a][d][1]):
+						elif self.is_Wall(r + self.act[a][d][0], c + self.act[a][d][1]):
 						#stay put, so get the prev reward of staying put + wallRwrd
-							rwrd = dF*self.mmap1[r][c] + wallRwrd
+							rwrd = dF*self.mmap1[r][c] + self.wallRwrd
 							#nloc_i.append([r, c])
-						elif self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
+						elif self.is_InMap(r + self.act[a][d][0], c + self.act[a][d][1]):
 							
 							#nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
-							rwrd = dF*self.mmap1[r][c] + stepRwrd
-						elif not self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
+							rwrd = dF*self.mmap1[r][c] + self.stepRwrd
+						elif not self.is_InMap(r + self.act[a][d][0], c + self.act[a][d][1]):
 	
 							#nloc_i.append( [r, c] )
-							rwrd = dF*stepRwrd
+							rwrd = dF*self.stepRwrd
 						
 						rwrd_allDrctns_gvnActn.append(rwrd)
-						probRwrd.append(rwrd*probAct[d])							
+						probRwrd.append(rwrd*self.probAct[d])							
 					actionRwrd_i = 0
 					for pr in range( len(probRwrd) ):
 						actionRwrd_i += probRwrd[pr]
 					actnRwrd.append(actionRwrd_i)
-					print "len(actnRwrd)"
-					print len(actnRwrd)
+					#print "len(actnRwrd)"
+					#print len(actnRwrd)
 
 				maxRwrd = 0
 				maxRwrdA = 0
@@ -203,3 +235,10 @@ class MDP:
 					self.policyMap[r][c] = "W"
 				else:
 					self.policyMap[r][c] = "E"
+				
+		print np.reshape(self.mmap1, (self.row, self.column))
+		print "\n"
+		print np.reshape(self.mmap2, (self.row, self.column))
+		print "\n"
+		print np.reshape(self.policyMap, (self.row, self.column))
+
