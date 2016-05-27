@@ -23,7 +23,7 @@ class Robot():
 		
 		print ("inside Robot.py: after MDP")
 		
-		self.simPub = rospy.Publisher("/sim_complete", Bool, queue_size=10)
+		self.simPub = rospy.Publisher("/map_node/sim_complete", Bool, queue_size=10)
 		rospy.sleep(0.5)
 		self.simPub.publish(True)               
 		rospy.sleep(5)

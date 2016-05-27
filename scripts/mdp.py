@@ -119,23 +119,22 @@ class MDP:
 		#self.calculateNewRewardsPolicies()
 		#self.mmap1 = deepcopy(self.mmap2)
 		
+		#self.calculateNewRewardsPolicies()
+		#self.mmap1 = deepcopy(self.mmap2)
+		
 		for itr in range(self.maxI):
 			self.calculateNewRewardsPolicies()
-			#print np.reshape(self.mmap1, (self.row, self.column))
-			#print "\n"
-			#print np.reshape(self.mmap2, (self.row, self.column))
-			#print "\n"
 			
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
 
-			self.mmap2 = []
-			tempRow = []
-			for i in range( (self.column) ):
-				tempRow.append(0)
+			#self.mmap2 = []
+			#tempRow = []
+			#for i in range( (self.column) ):
+				#tempRow.append(0)
 			
-			for j in range( (self.row)):
-				self.mmap2.append(deepcopy(tempRow) )
+			#for j in range( (self.row)):
+				#self.mmap2.append(deepcopy(tempRow) )
 
 			#what happens in the last iteration?
 	def calculateNewRewardsPolicies(self):
@@ -151,46 +150,47 @@ class MDP:
 					continue
 				if self.goal_r == r and self.goal_c ==  c:
 					continue
+
+				#act
 					#forward   backward   left      right 
 				#north  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
 				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
 				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
 				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 	
-				#prob: forward backward left right
+				#probAct: forward backward left right
 
 				#for every action there is one reward
 				actnRwrd = []
 				for a in range( len ( self.act ) ):
-					rwrd_allDrctns_gvnActn = []
+					#rwrd_allDrctns_gvnActn = []
 					probRwrd = []	
 					for d in range(len(self.act[a]) ):
+						movRow = r + self.act[a][d][0] #for eg: moving forward with action north
+						movCol = c + self.act[a][d][1] #fod eg: moving forward with action north
 
-						if self.goal_r == r + self.act[a][d][0] and self.goal_c ==  c + self.act[a][d][1]:
+						if self.goal_r == movRow and self.goal_c == movCol:
 						#prev_reward + goalRwrd					
-							rwrd = dF*self.mmap1[r + self.act[a][d][0]][c + self.act[a][d][1]] + self.goalRwrd
+							ttl_rwrd = dF*self.mmap1[movRow][movCol] + self.stepRwrd + self.goalRwrd
 							#nlocP = [ r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
 					
-						elif self.is_Pit(r + self.act[a][d][0], c + self.act[a][d][1]):
-						
-							rwrd = dF*self.mmap1[r + self.act[a][d][0]][c + self.act[a][d][1]] + self.pitRwrd
+						elif self.is_Pit(movRow, movCol):
+							ttl_rwrd = dF*self.mmap1[movRow][movCol] + self.stepRwrd + self.pitRwrd
 							#nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
 							
-						elif self.is_Wall(r + self.act[a][d][0], c + self.act[a][d][1]):
+						elif self.is_Wall(movRow, movCol):
 						#stay put, so get the prev reward of staying put + wallRwrd
-							rwrd = dF*self.mmap1[r][c] + self.wallRwrd
+							ttl_rwrd = dF*self.mmap1[r][c] + self.wallRwrd
 							#nloc_i.append([r, c])
-						elif self.is_InMap(r + self.act[a][d][0], c + self.act[a][d][1]):
-							
+						elif self.is_InMap(movRow, movCol):
 							#nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
-							rwrd = dF*self.mmap1[r][c] + self.stepRwrd
-						elif not self.is_InMap(r + self.act[a][d][0], c + self.act[a][d][1]):
-	
+							ttl_rwrd = dF*self.mmap1[movRow][movCol] + self.stepRwrd
+						elif not self.is_InMap(movRow, movCol):
 							#nloc_i.append( [r, c] )
-							rwrd = dF*self.stepRwrd
+							ttl_rwrd = dF*self.mmap1[r][c] + self.wallRwrd 
 						
-						rwrd_allDrctns_gvnActn.append(rwrd)
-						probRwrd.append(rwrd*self.probAct[d])							
+						#rwrd_allDrctns_gvnActn.append(ttl_rwrd)
+						probRwrd.append(ttl_rwrd*self.probAct[d])							
 					actionRwrd_i = 0
 					for pr in range( len(probRwrd) ):
 						actionRwrd_i += probRwrd[pr]
