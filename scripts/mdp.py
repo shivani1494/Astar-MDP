@@ -55,7 +55,7 @@ class MDP:
                 self.pits = self.config["pits"]
                 self.walls = self.config["walls"]
 	
-		self.actions = [ [[1, 0 ], [-1,0], [0, -1], [0, 1] ],
+		self.actions = [ [[1, 0 ], [-1,0], [0, -1], [0, 1]],
 				 [[-1, 0],[1, 0], [0,1], [0,-1]],
 				 [[0,-1], [0,1], [-1,0], [1,0]],
 				 [[0,1],[0, -1],[1, 0],[-1, 0]]
@@ -91,6 +91,8 @@ class MDP:
 
 	def MDP_Algo(self):
 		
+		dF = self.config["discount_factor"]
+
 		self.mmap1[self.goal_r][self.goal_c] = self.goalRwrd	
 		self.mmap2[self.goal_r][self.goal_c] = self.goalRwrd	
 
@@ -116,28 +118,60 @@ class MDP:
 				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 	
 				#prob: forward backward left right
+
+				#for every action there is one reward
+				actnRwrd = []
 				for a in range( len ( self.actions ) ):
+					rwrd_i = []
+					rwrd = 0
 					for d in range(len(self.actions[a]) ):
 
-					if isGoal(r + act[a][d][0], c + act[a][d][1] ):
+						if is_Goal(r + act[a][d][0], c + act[a][d][1] ):
 						#prev_reward + goalRwrd					
-						reward = self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + goalRwrd
-						nlocP = [ [r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
+							rwrd = dF*self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + goalRwrd
+							nlocP = [ [r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
 					
-					elif self.is_Pit(r + act[a][d][0], c + act[a][d][1]):
+						elif self.is_Pit(r + act[a][d][0], c + act[a][d][1]):
 						
-						reward = self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + pitRwrd
-						nlocP = [ [r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
+							rwrd = dF*self.mmap1[r+act[a][d][0]][c+act[a][d][1]] + pitRwrd
+							nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
 							
-					elif self.is_Wall(r + act[a][d][0], c + act[a][d][1]):
+						elif self.is_Wall(r + act[a][d][0], c + act[a][d][1]):
 						#stay put, so get the prev reward of staying put + wallRwrd
-						reward = self.mmap1[r][c] + wallRwrd
-						nlocP = [ [r, c], self.probAct[d] ]
-					elif self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
+							rwrd = dF*self.mmap1[r][c] + wallRwrd
+							nloc_i.append([r, c])
+						elif self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
 
-						nlocP = [ [r+act[a][d][0], c+act[a][d][1]], self.probAct[d] ]
-						reward = stepRwrd
-					elif not self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
+							nloc_i.append( [r+act[a][d][0], c+act[a][d][1] )
+							rwrd = dF*self.mmap1[r][c] + stepRwrd
+						elif not self.is_InMap(r + act[a][d][0], c + act[a][d][1]):
 	
-						nlocP = [ [r, c], self.probAct[d] ]
-						reward = stepRwrd
+							nloc_i.append( [r, c] )
+							rwrd = dF*stepRwrd
+						
+						rwrd_allDrctns_gvnActn.append(rwrd)
+						probRwrd.append(rwrd_allDrctns_gvnActn*probAct[d])							
+					actionRwrd_i = 0
+					for pr in range( len(probRwrd) ):
+						actionRwrd_i += probRwrd[pr]
+					actnRwrd.append(actionRwrd_i)
+					print "len(actnRwrd)"
+					print len(actnRwrd)
+
+
+				maxRwrd = 0
+				for mr in range(len(actnRwrd)):
+					if actnRwrd[mr] > maxRwrd:
+						maxRwrdA = mr
+						maxRwrd = actnRwrd[mr]
+
+				mmap2[r][c] = maxRwrd
+				if i == 0:
+					mmap3[r][c] = "N"
+				elif i == 1:
+					mmap3[r][c] = "S"
+				elif i == 2:
+					mmap3[r][c] = "W"
+				else:
+					mmap3[r][c] = "E"
+
