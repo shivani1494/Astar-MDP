@@ -32,24 +32,15 @@ class MDP:
                 #self.resPub.publish([1,1])
                 self.row = self.config["map_size"][0]
                 self.column = self.config["map_size"][1]
-    
-		'''	
-		for i in range( (self.column) ):
-			self.tempRowP.append("")
-			self.tempRow.append(0)
-	
-		for j in range( (self.row)):
-			self.mmap1.append(deepcopy(self.tempRow) )
-   		'''
 		
-		self.policyMap = []
+		'''
 		self.tempRowP = []
 		
 		for i in range( (self.column) ):
 			self.tempRowP.append("")
 		for j in range( (self.row)):
                         self.policyMap.append(deepcopy(self.tempRowP) )
- 
+ 		'''
 		self.start = self.config["start"]
                 self.goal = self.config["goal"]
                 self.goal_r = self.goal[0]
@@ -65,20 +56,30 @@ class MDP:
 				 [[0,1],[0, -1],[1, 0],[-1, 0]]
 				]
 					#forward   backward   left      right 
-				#north  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
-				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
+				#south  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
+				#north  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
 				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
 				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 		
 		self.mmap1 = []
                 self.mmap2 = []
-
-		#creating the map 
-		self.createMap(self.mmap1)
-		self.createMap(self.mmap2)	
+		self.policyMap = []
 		
-		self.MDP_Algo()		
-        
+		#creating maps 
+		self.createMap(self.mmap1, 0, False)
+		self.createMap(self.mmap2, 0, False)	
+		self.createMap(self.policyMap, "", True)	
+		
+		self.MDP_Algo()	
+		
+		policyL = []
+
+		for r in range( len(self.policyMap)):
+			for c in range(len(self.policyMap[r]) ):
+				policyL.append(self.policyMap[r][c])	
+      		print policyL 
+		
+ 
 	def is_InMap(self, curr_r, curr_c):
                 c_Bound = self.column - 1
                 r_Bound = self.row - 1
@@ -100,32 +101,51 @@ class MDP:
                                 return True 
 		return False
 	
-	def createMap(self, mmap):
+	def createMap(self, mmap, minp, isPol):
                 
 		tempRow = []
 		for i in range( (self.column) ):
-			tempRow.append(0)
+			tempRow.append(minp)
 	
 		for j in range( (self.row)):
 			mmap.append(deepcopy(tempRow) )
-		
-		mmap[self.goal_r][self.goal_c] = self.goalRwrd	
+			
+		if isPol:
+			mmap[self.goal_r][self.goal_c] = "GOAL"
+		else:
+			mmap[self.goal_r][self.goal_c] = self.goalRwrd	
 
 		for i in range(len(self.walls) ):
 			wall_r = self.walls[i][0]	
 			wall_c = self.walls[i][1]	
-			mmap[wall_r][wall_c] = self.wallRwrd	
+			if isPol:
+				mmap[wall_r][wall_c] = "WALL"
+			else:
+				mmap[wall_r][wall_c] = self.wallRwrd	
 				
 		for i in range(len(self.pits) ):
 			pit_r = self.pits[i][0]	
 			pit_c = self.pits[i][1]	
-			mmap[pit_r][pit_c] = self.pitRwrd	
+			if isPol:
+				mmap[pit_r][pit_c] = "PIT"
+			else:
+				mmap[pit_r][pit_c] = self.pitRwrd	
+	
+
+
+	def isLessThanThrshldDif(self):
+		
+		sumT = 0
+		for r in range(len(self.mmap1)):
+			for c in range(len(self.mmap1)):
+				sumT += (self.mmap2[r][c] - self.mmap1[r][c])		
+		
+		if sumT < self.threshDiff:
+			return True
+		else:
+			return False
 
 	def MDP_Algo(self):
-		
-			
-		self.calculateNewRewardsPolicies()
-		self.mmap1 = deepcopy(self.mmap2)
 		
 		self.calculateNewRewardsPolicies()
 		self.mmap1 = deepcopy(self.mmap2)
@@ -133,12 +153,16 @@ class MDP:
 		for itr in range(self.maxI):
 			self.calculateNewRewardsPolicies()
 			
+			if self.isLessThanThrshldDif():
+				break
+	
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
 			self.mmap2 = []
-			self.createMap(self.mmap2)
+			self.createMap(self.mmap2, 0, False)
 	
 			#what happens in the last iteration?
+	
 	def calculateNewRewardsPolicies(self):
 		dF = self.config["discount_factor"]
 		
@@ -155,8 +179,8 @@ class MDP:
 
 				#act
 					#forward   backward   left      right 
-				#north  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
-				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
+				#south  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
+				#north  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
 				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
 				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 	
@@ -209,9 +233,9 @@ class MDP:
 
 				self.mmap2[r][c] = maxRwrd
 				if maxRwrdA == 0:
-					self.policyMap[r][c] = "N"
-				elif maxRwrdA == 1:
 					self.policyMap[r][c] = "S"
+				elif maxRwrdA == 1:
+					self.policyMap[r][c] = "N"
 				elif maxRwrdA == 2:
 					self.policyMap[r][c] = "W"
 				else:
