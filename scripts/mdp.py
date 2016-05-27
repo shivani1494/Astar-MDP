@@ -17,7 +17,7 @@ class MDP:
 		self.probB = self.config["probability_move_backward"]
 		self.probL = self.config["probability_move_left"]
 		self.probR = self.config["probability_move_right"]
-
+		self.probAct = [ self.probF, self.probB, self.probL, self.probR]
 
 		self.maxI = self.config["max_iterations"]
 		self.threshDiff = self.config["thershold_difference"]
@@ -55,9 +55,17 @@ class MDP:
                 self.pits = self.config["pits"]
                 self.walls = self.config["walls"]
 	
-		self.drctns = ["N", "S", "E", "W"]
+		self.actions = [ [[1, 0 ], [-1,0], [0, -1], [0, 1] ],
+				 [[-1, 0],[1, 0], [0,1], [0,-1]],
+				 [[0,-1], [0,1], [-1,0], [1,0]],
+				 [[0,1],[0, -1],[1, 0],[-1, 0]]
+				]
+					#forward   backward   left      right 
+				#north  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
+				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
+				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
+				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 		
-	def northMoves(self, r, c, ):
 		
         
 	def is_InMap(self, curr_r, curr_c):
@@ -104,8 +112,8 @@ class MDP:
 					#forward   backward   left      right 
 				#north  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
 				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
-				#west	r, c-1     r, c+1     r-1,c     r+1, c
-				#east   r, c+1     r, c-1     r+1,c     r-1, c 
+				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
+				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
 	
 				#prob: forward backward left right
 				for a in range( len ( self.actions ) ):
