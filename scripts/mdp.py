@@ -28,33 +28,27 @@ class MDP:
 		self.goalRwrd = self.config["reward_for_reaching_goal"]
 		self.pitRwrd = self.config["reward_for_falling_in_pit"]
 
-                #self.resPub = rospy.Publisher("/results/path_list", AStarPath, queue_size=10)
+                #self.resPub = rospy.Publisher("/results/policy_list", AStarPath, queue_size=10)
                 #self.resPub.publish([1,1])
                 self.row = self.config["map_size"][0]
                 self.column = self.config["map_size"][1]
     
-                self.tempRow = []
-		self.tempRowP = []
-		self.mmap1 = []
-                #creating the map 
+		'''	
 		for i in range( (self.column) ):
 			self.tempRowP.append("")
 			self.tempRow.append(0)
 	
 		for j in range( (self.row)):
 			self.mmap1.append(deepcopy(self.tempRow) )
-
-                self.mmap2 = deepcopy(self.mmap1) 
-
+   		'''
+		
 		self.policyMap = []
+		self.tempRowP = []
+		
+		for i in range( (self.column) ):
+			self.tempRowP.append("")
 		for j in range( (self.row)):
                         self.policyMap.append(deepcopy(self.tempRowP) )
-               	
-		#print np.reshape(self.mmap1, (self.row, self.column))
-		#print "\n"
-		#print np.reshape(self.mmap2, (self.row, self.column))
-		#print "\n"
-		#print np.reshape(self.policyMap, (self.row, self.column))
  
 		self.start = self.config["start"]
                 self.goal = self.config["goal"]
@@ -75,6 +69,13 @@ class MDP:
 				#south  r-1, c+0   r+1, c+0   r+0, c+1  r+0, c-1
 				#west	r+0, c-1   r+0, c+1   r-1, c+0  r+1, c+0
 				#east   r+0, c+1   r+0, c-1   r+1,c+0   r-1, c+0 
+		
+		self.mmap1 = []
+                self.mmap2 = []
+
+		#creating the map 
+		self.createMap(self.mmap1)
+		self.createMap(self.mmap2)	
 		
 		self.MDP_Algo()		
         
@@ -98,44 +99,45 @@ class MDP:
                         if self.pits[i][0] == curr_r and self.pits[i][1] == curr_c:
                                 return True 
 		return False
-
-	def MDP_Algo(self):
+	
+	def createMap(self, mmap):
+                
+		tempRow = []
+		for i in range( (self.column) ):
+			tempRow.append(0)
+	
+		for j in range( (self.row)):
+			mmap.append(deepcopy(tempRow) )
 		
-		self.mmap1[self.goal_r][self.goal_c] = self.goalRwrd	
-		self.mmap2[self.goal_r][self.goal_c] = self.goalRwrd	
+		mmap[self.goal_r][self.goal_c] = self.goalRwrd	
 
 		for i in range(len(self.walls) ):
 			wall_r = self.walls[i][0]	
 			wall_c = self.walls[i][1]	
-			self.mmap1[wall_r][wall_c] = self.wallRwrd	
-			self.mmap2[wall_r][wall_c] = self.wallRwrd	
+			mmap[wall_r][wall_c] = self.wallRwrd	
 				
 		for i in range(len(self.pits) ):
 			pit_r = self.pits[i][0]	
 			pit_c = self.pits[i][1]	
-			self.mmap1[pit_r][pit_c] = self.pitRwrd	
-			self.mmap2[pit_r][pit_c] = self.pitRwrd	
+			mmap[pit_r][pit_c] = self.pitRwrd	
+
+	def MDP_Algo(self):
 		
-		#self.calculateNewRewardsPolicies()
-		#self.mmap1 = deepcopy(self.mmap2)
+			
+		self.calculateNewRewardsPolicies()
+		self.mmap1 = deepcopy(self.mmap2)
 		
-		#self.calculateNewRewardsPolicies()
-		#self.mmap1 = deepcopy(self.mmap2)
+		self.calculateNewRewardsPolicies()
+		self.mmap1 = deepcopy(self.mmap2)
 		
 		for itr in range(self.maxI):
 			self.calculateNewRewardsPolicies()
 			
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
-
-			#self.mmap2 = []
-			#tempRow = []
-			#for i in range( (self.column) ):
-				#tempRow.append(0)
-			
-			#for j in range( (self.row)):
-				#self.mmap2.append(deepcopy(tempRow) )
-
+			self.mmap2 = []
+			self.createMap(self.mmap2)
+	
 			#what happens in the last iteration?
 	def calculateNewRewardsPolicies(self):
 		dF = self.config["discount_factor"]
