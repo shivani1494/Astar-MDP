@@ -58,11 +58,14 @@ class MDP:
 		#creating maps 
 		self.createMap(self.mmap1, 0, False)
 		self.createMap(self.mmap2, 0, False)#this is the value map, and it contains temp values from temp policy	
-		self.createMap(self.policyMap, 0, True)#every location contains an arbitrary starting policy
+		self.createMap(self.policyMap, 0, False)#every location contains an arbitrary starting policy
 		
 		self.MDP_Algo()	
 		
-                self.resPub = rospy.Publisher("/results/policy_list", PolicyList, queue_size=10)
+		print "\n"
+		print np.reshape(self.policyMap, (self.row, self.column))
+                
+		self.resPub = rospy.Publisher("/results/policy_list", PolicyList, queue_size=10)
 		policyList = PolicyList()
 
 
@@ -70,13 +73,35 @@ class MDP:
 
 		for r in range( len(self.policyMap)):
 			for c in range(len(self.policyMap[r]) ):
-				policyL.append(self.policyMap[r][c])	
+				if self.policyMap[r][c] == 0 and not self.is_Wall(r, c):
+					policyL.append("S")	
                 
-		#print policyL 
+				if self.policyMap[r][c] == 1:
+					policyL.append("N")	
+				
+				if self.policyMap[r][c] == 2:
+					policyL.append("W")	
+				
+				if self.policyMap[r][c] == 3:
+					policyL.append("E")	
+					
+				if self.is_Pit(r,c):
+					policyL.append("PIT")	
+				
+				if self.is_Wall(r,c):
+					policyL.append("WALL")	
+				
+				if self.goal_r == r and self.goal_c ==  c:
+					policyL.append("GOAL")	
+
+		print policyL 
 		
 		policyList.data = policyL
 		rospy.sleep(0.3)
 		self.resPub.publish(policyList)
+
+	
+
  
 	def is_InMap(self, curr_r, curr_c):
                 c_Bound = self.column - 1
@@ -129,25 +154,14 @@ class MDP:
 			else:
 				mmap[pit_r][pit_c] = self.pitRwrd	
 
-	def isLessThanThrshldDif(self):
-		sumT = 0
-		for r in range(len(self.mmap1)):
-			for c in range(len(self.mmap1)):
-				sumT += (self.mmap2[r][c] - self.mmap1[r][c])		
-		
-		if sumT < self.threshDiff:
-			return True
-		else:
-			return False
-
 	def MDP_Algo(self):
 		
-		noChange = False
-		while not noChange:
-			noChange = True
+		self.noChange = False
+		while not self.noChange:
+			self.noChange = True
 			#initial policies were set when the map was created
 			#value map --that is mmap1 gets updated only here
-			self.calculateNewRewardsPolicies(True, noChange)
+			self.calculateNewRewardsPolicies(True)
 			
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
@@ -155,10 +169,12 @@ class MDP:
 			self.createMap(self.mmap2, 0, False)
 		
 			#policy map is updated only here
-			self.calculateNewRewardsPolicies(False, noChange)
+			self.calculateNewRewardsPolicies(False)
 			#what happens in the last iteration?
+			print self.noChange			
+			
 	
-	def calculateNewRewardsPolicies(self, setValueMap, noChange):
+	def calculateNewRewardsPolicies(self, setValueMap):
 		dF = self.config["discount_factor"]
 		
 		for r in range ( len (self.mmap1) ):
@@ -236,21 +252,12 @@ class MDP:
 					Qsa = actnRwrd[0] #this will only be 1 when we execute the following if stmt		
 			
 					if Qsa > QBest:
+						print "action"
+						print a
 						self.policyMap[r][c] = a
 						QBest = Qsa
-						noChange = False
-
-				'''
-				if maxRwrdA == 0:
-					self.policyMap[r][c] = "S"
-				elif maxRwrdA == 1:
-					self.policyMap[r][c] = "N"
-				elif maxRwrdA == 2:
-					self.policyMap[r][c] = "W"
-				else:
-					self.policyMap[r][c] = "E"
-				
-				'''
+						self.noChange = False
+						print self.noChange
 
 		print np.reshape(self.mmap1, (self.row, self.column))
 		print "\n"
