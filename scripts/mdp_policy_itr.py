@@ -60,7 +60,7 @@ class MDP:
 		#creating maps 
 		self.createMap(self.mmap1, 0, False)
 		self.createMap(self.mmap2, 0, False)#this is the value map, and it contains temp values from temp policy	
-		self.createMap(self.policyMap, 0, False)#every location contains an arbitrary starting policy
+		self.createMap(self.policyMap, 1, False)#every location contains an arbitrary starting policy
 		
 		self.MDP_Algo()	
 		
@@ -102,9 +102,6 @@ class MDP:
 		rospy.sleep(0.3)
 		self.resPub.publish(policyList)
 
-	
-
- 
 	def is_InMap(self, curr_r, curr_c):
                 c_Bound = self.column - 1
                 r_Bound = self.row - 1
@@ -175,7 +172,7 @@ class MDP:
 			#policy map is updated only here
 			self.calculateNewRewardsPolicies()
 			#what happens in the last iteration?
-			print self.noChange			
+			#print self.noChange			
 			
 	
 	def calculateNewRewardsPolicies(self):
@@ -206,11 +203,11 @@ class MDP:
 				#for every action there is one reward
 				actnRwrd = []
 				for a in range( len ( self.act ) ):
-					#rwrd_allDrctns_gvnActn = []
-			
+					#print "a"
+					#print a
+					#print "policy Map"
+					#print self.policyMap[r][c]	
 					if a != self.policyMap[r][c] and self.setValueMap:
-						print "action not implemtned"
-						print a
 						continue
 					#0 -- south
 					#1 -- north
@@ -251,6 +248,8 @@ class MDP:
 					
 					
 					if self.setValueMap:
+						#print "setting mmap1"
+						#print actnRwrd[0]
 						self.mmap2[r][c] = actnRwrd[0]
 						break				
 
@@ -258,8 +257,8 @@ class MDP:
 					Qsa = actnRwrd[0] #this will only be 1 when we execute the following if stmt		
 			
 					if Qsa > QBest:
-						print "action"
-						print a
+						#print "action"
+						#print a
 						self.policyMap[r][c] = a
 						QBest = Qsa
 						self.noChange = False
