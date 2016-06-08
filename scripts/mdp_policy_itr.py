@@ -54,7 +54,9 @@ class MDP:
 		self.mmap1 = []
                 self.mmap2 = []
 		self.policyMap = []
-		
+		self.noChange = False
+		self.setValueMap = True	
+	
 		#creating maps 
 		self.createMap(self.mmap1, 0, False)
 		self.createMap(self.mmap2, 0, False)#this is the value map, and it contains temp values from temp policy	
@@ -161,20 +163,22 @@ class MDP:
 			self.noChange = True
 			#initial policies were set when the map was created
 			#value map --that is mmap1 gets updated only here
-			self.calculateNewRewardsPolicies(True)
+			self.setValueMap = True
+			self.calculateNewRewardsPolicies()
 			
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
 			self.mmap2 = []
 			self.createMap(self.mmap2, 0, False)
-		
+			
+			self.setValueMap = False
 			#policy map is updated only here
-			self.calculateNewRewardsPolicies(False)
+			self.calculateNewRewardsPolicies()
 			#what happens in the last iteration?
 			print self.noChange			
 			
 	
-	def calculateNewRewardsPolicies(self, setValueMap):
+	def calculateNewRewardsPolicies(self):
 		dF = self.config["discount_factor"]
 		
 		for r in range ( len (self.mmap1) ):
@@ -203,8 +207,10 @@ class MDP:
 				actnRwrd = []
 				for a in range( len ( self.act ) ):
 					#rwrd_allDrctns_gvnActn = []
-					
-					if a != self.policyMap[r][c] and setValueMap:
+			
+					if a != self.policyMap[r][c] and self.setValueMap:
+						print "action not implemtned"
+						print a
 						continue
 					#0 -- south
 					#1 -- north
@@ -244,7 +250,7 @@ class MDP:
 					actnRwrd.append(actionRwrd_i)
 					
 					
-					if setValueMap:
+					if self.setValueMap:
 						self.mmap2[r][c] = actnRwrd[0]
 						break				
 
