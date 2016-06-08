@@ -40,10 +40,10 @@ class MDP:
                 self.pits = self.config["pits"]
                 self.walls = self.config["walls"]
 	
-		self.act = [ [[1, 0 ], [-1,0], [0, -1], [0, 1]],
-				 [[-1, 0],[1, 0], [0,1], [0,-1]],
-				 [[0,-1], [0,1], [-1,0], [1,0]],
-				 [[0,1],[0, -1],[1, 0],[-1, 0]]
+		self.act = [     [[1,0],[-1,0],[0,-1],[0,1]],
+				 [[-1,0],[1,0],[0,1],[0,-1]],
+				 [[0,-1],[0,1],[-1,0],[1,0]],
+				 [[0,1],[0,-1],[1,0],[-1,0]]
 				]
 					#forward   backward   left      right 
 				#south  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
@@ -57,8 +57,8 @@ class MDP:
 		
 		#creating maps 
 		self.createMap(self.mmap1, 0, False)
-		self.createMap(self.mmap2, 0, False)	
-		self.createMap(self.policyMap, "", True)	
+		self.createMap(self.mmap2, 0, False)#this is the value map, and it contains temp values from temp policy	
+		self.createMap(self.policyMap, 'N', True)#every location contains an arbitrary starting policy
 		
 		self.MDP_Algo()	
 		
@@ -66,6 +66,20 @@ class MDP:
 		policyList = PolicyList()
 	
 		policyL = []
+
+		for r in range( len(mmap)):
+			for c in range(len(mmap[r])):
+				ranVal = np.random % 4 
+				#avoid pits, goals and walls
+				if ranVal == 1:
+					tempOptPol.append('N')
+				elif ranVal == 2:
+					tempOptPol.append('S')
+				elif ranVal == 3:
+					tempOptPol.append('W')
+				else ranVal == 4:
+					tempOptPol.append('E')
+	
 
 		for r in range( len(self.policyMap)):
 			for c in range(len(self.policyMap[r]) ):
@@ -141,23 +155,23 @@ class MDP:
 
 	def MDP_Algo(self):
 		
-		self.calculateNewRewardsPolicies()
-		self.mmap1 = deepcopy(self.mmap2)
-		
-		for itr in range(self.maxI):
-			self.calculateNewRewardsPolicies()
+		noChange = False
+		while !noChange
+			noChange = True
+			#initial policies were set when the map was created
+			#value map --that is mmap1 gets updated only here
+			self.calculateNewRewardsPolicies(True, noChange)
 			
-			if self.isLessThanThrshldDif():
-				break
-	
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
 			self.mmap2 = []
 			self.createMap(self.mmap2, 0, False)
-	
+		
+			#policy map is updated only here
+			self.calculateNewRewardsPolicies(False, noChange)
 			#what happens in the last iteration?
 	
-	def calculateNewRewardsPolicies(self):
+	def calculateNewRewardsPolicies(self, setValueMap, noChange):
 		dF = self.config["discount_factor"]
 		
 		for r in range ( len (self.mmap1) ):
@@ -170,6 +184,8 @@ class MDP:
 					continue
 				if self.goal_r == r and self.goal_c ==  c:
 					continue
+				
+				QBest = mmap1[r][c]				
 
 				#act
 					#forward   backward   left      right 
@@ -184,6 +200,14 @@ class MDP:
 				actnRwrd = []
 				for a in range( len ( self.act ) ):
 					#rwrd_allDrctns_gvnActn = []
+					
+					if a != policyMap[r][c] && setValueMap:
+						continue
+					#0 -- south
+					#1 -- north
+					#2 -- west
+					#3 -- east
+					
 					probRwrd = []	
 					for d in range(len(self.act[a]) ):
 						movRow = r + self.act[a][d][0] #for eg: moving forward with action north
@@ -215,17 +239,24 @@ class MDP:
 					for pr in range( len(probRwrd) ):
 						actionRwrd_i += probRwrd[pr]
 					actnRwrd.append(actionRwrd_i)
+					
+					
+					if setValueMap:
+						mmap2[r][c] = actnRwrd[0]
+						break				
+
+					#all this is executed only when setValueMap is false bcuz we break early if not.		
+					Qsa = actnRwrd[0] #this will only be 1 when we execute the following if stmt		
+			
+					if Qsa > QBest:
+						policyMap[r][c] = a
+						QBest = Qsa
+						noChange = False
+
 					#print "len(actnRwrd)"
 					#print len(actnRwrd)
 
-				maxRwrd = 0
-				maxRwrdA = 0
-				for mr in range(len(actnRwrd)):
-					if actnRwrd[mr] > maxRwrd:
-						maxRwrdA = mr
-						maxRwrd = actnRwrd[mr]
-
-				self.mmap2[r][c] = maxRwrd
+				'''
 				if maxRwrdA == 0:
 					self.policyMap[r][c] = "S"
 				elif maxRwrdA == 1:
@@ -235,6 +266,8 @@ class MDP:
 				else:
 					self.policyMap[r][c] = "E"
 				
+				'''
+
 		print np.reshape(self.mmap1, (self.row, self.column))
 		print "\n"
 		print np.reshape(self.mmap2, (self.row, self.column))
