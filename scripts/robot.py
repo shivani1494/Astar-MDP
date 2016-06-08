@@ -7,7 +7,7 @@ import json
 import image_util
 from read_config import read_config
 import astar as a
-import mdp
+import mdp_policy_itr as mdp
 class Robot():
 	def __init__(self):
 		rospy.init_node('Robot')

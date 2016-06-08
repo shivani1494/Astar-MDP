@@ -58,28 +58,15 @@ class MDP:
 		#creating maps 
 		self.createMap(self.mmap1, 0, False)
 		self.createMap(self.mmap2, 0, False)#this is the value map, and it contains temp values from temp policy	
-		self.createMap(self.policyMap, 'N', True)#every location contains an arbitrary starting policy
+		self.createMap(self.policyMap, 0, True)#every location contains an arbitrary starting policy
 		
 		self.MDP_Algo()	
 		
                 self.resPub = rospy.Publisher("/results/policy_list", PolicyList, queue_size=10)
 		policyList = PolicyList()
-	
-		policyL = []
 
-		for r in range( len(mmap)):
-			for c in range(len(mmap[r])):
-				ranVal = np.random % 4 
-				#avoid pits, goals and walls
-				if ranVal == 1:
-					tempOptPol.append('N')
-				elif ranVal == 2:
-					tempOptPol.append('S')
-				elif ranVal == 3:
-					tempOptPol.append('W')
-				else ranVal == 4:
-					tempOptPol.append('E')
-	
+
+		policyL = []
 
 		for r in range( len(self.policyMap)):
 			for c in range(len(self.policyMap[r]) ):
@@ -156,7 +143,7 @@ class MDP:
 	def MDP_Algo(self):
 		
 		noChange = False
-		while !noChange
+		while not noChange:
 			noChange = True
 			#initial policies were set when the map was created
 			#value map --that is mmap1 gets updated only here
@@ -185,7 +172,7 @@ class MDP:
 				if self.goal_r == r and self.goal_c ==  c:
 					continue
 				
-				QBest = mmap1[r][c]				
+				QBest = self.mmap1[r][c]				
 
 				#act
 					#forward   backward   left      right 
@@ -201,7 +188,7 @@ class MDP:
 				for a in range( len ( self.act ) ):
 					#rwrd_allDrctns_gvnActn = []
 					
-					if a != policyMap[r][c] && setValueMap:
+					if a != self.policyMap[r][c] and setValueMap:
 						continue
 					#0 -- south
 					#1 -- north
@@ -242,19 +229,16 @@ class MDP:
 					
 					
 					if setValueMap:
-						mmap2[r][c] = actnRwrd[0]
+						self.mmap2[r][c] = actnRwrd[0]
 						break				
 
 					#all this is executed only when setValueMap is false bcuz we break early if not.		
 					Qsa = actnRwrd[0] #this will only be 1 when we execute the following if stmt		
 			
 					if Qsa > QBest:
-						policyMap[r][c] = a
+						self.policyMap[r][c] = a
 						QBest = Qsa
 						noChange = False
-
-					#print "len(actnRwrd)"
-					#print len(actnRwrd)
 
 				'''
 				if maxRwrdA == 0:
