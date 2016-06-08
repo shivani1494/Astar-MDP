@@ -9,12 +9,6 @@ import json
 import image_util
 from read_config import read_config
 
-
-
-##################################
-# POLICY ITERATION
-#################################
-
 class MDP:
 
 	def __init__(self):
@@ -46,10 +40,10 @@ class MDP:
                 self.pits = self.config["pits"]
                 self.walls = self.config["walls"]
 	
-		self.act = [     [[1,0],[-1,0],[0,-1],[0,1]],
-				 [[-1,0],[1,0],[0,1],[0,-1]],
-				 [[0,-1],[0,1],[-1,0],[1,0]],
-				 [[0,1],[0,-1],[1,0],[-1,0]]
+		self.act = [ [[1, 0 ], [-1,0], [0, -1], [0, 1]],
+				 [[-1, 0],[1, 0], [0,1], [0,-1]],
+				 [[0,-1], [0,1], [-1,0], [1,0]],
+				 [[0,1],[0, -1],[1, 0],[-1, 0]]
 				]
 					#forward   backward   left      right 
 				#south  r+1, c+0   r-1, c+0   r+0, c-1  r+0, c+1
@@ -60,54 +54,29 @@ class MDP:
 		self.mmap1 = []
                 self.mmap2 = []
 		self.policyMap = []
-		self.noChange = False
-		self.setValueMap = True	
-	
+		
 		#creating maps 
 		self.createMap(self.mmap1, 0, False)
-		self.createMap(self.mmap2, 0, False)#this is the value map, and it contains temp values from temp policy	
-		self.createMap(self.policyMap, 1, False)#every location contains an arbitrary starting policy
+		self.createMap(self.mmap2, 0, False)	
+		self.createMap(self.policyMap, "", True)	
 		
 		self.MDP_Algo()	
 		
-		print "\n"
-		print np.reshape(self.policyMap, (self.row, self.column))
-                
-		self.resPub = rospy.Publisher("/results/policy_list", PolicyList, queue_size=10)
+                self.resPub = rospy.Publisher("/results/policy_list", PolicyList, queue_size=10)
 		policyList = PolicyList()
-
-
+	
 		policyL = []
 
 		for r in range( len(self.policyMap)):
 			for c in range(len(self.policyMap[r]) ):
-				if self.policyMap[r][c] == 0 and not self.is_Wall(r, c):
-					policyL.append("S")	
+				policyL.append(self.policyMap[r][c])	
                 
-				if self.policyMap[r][c] == 1:
-					policyL.append("N")	
-				
-				if self.policyMap[r][c] == 2:
-					policyL.append("W")	
-				
-				if self.policyMap[r][c] == 3:
-					policyL.append("E")	
-					
-				if self.is_Pit(r,c):
-					policyL.append("PIT")	
-				
-				if self.is_Wall(r,c):
-					policyL.append("WALL")	
-				
-				if self.goal_r == r and self.goal_c ==  c:
-					policyL.append("GOAL")	
-
-		print policyL 
+		#print policyL 
 		
 		policyList.data = policyL
 		rospy.sleep(0.3)
 		self.resPub.publish(policyList)
-
+ 
 	def is_InMap(self, curr_r, curr_c):
                 c_Bound = self.column - 1
                 r_Bound = self.row - 1
@@ -159,90 +128,36 @@ class MDP:
 			else:
 				mmap[pit_r][pit_c] = self.pitRwrd	
 
-
-
-##################################
-# POLICY ITERATION
-#################################
-	
-	def policyIteration(self, policy):
-		P_mat = []
-		P_A_S_mat = []
-		P_A_mat = []	
-		for a in range( len ( self.act ) ):
-					#0 -- south
-					#1 -- north
-					#2 -- west
-					#3 -- east
-			for r in range(len(self.mmap1)):
-				for c in range(len(self.mmap1[r])):	
-					#build mmap3 and put all initial values as -1	
-					tempRow = []
-					for i in range( (self.column) ):
-						tempRow.append(-1)
-	
-					for j in range( (self.row)):
-						mmap3.append(deepcopy(tempRow) )
-					
-					for d in range(len(self.act[a]) ):
-						movRow = r + self.act[a][d][0] #for eg: moving forward with action north
-						movCol = c + self.act[a][d][1] #fod eg: moving forward with action north
-
-						if not self.is_InMap(movRow, movCol):
-							continue
-						mmap3[movRow][movCol] = self.probAct[d]
-					
-						#convert mmap3 into a list
-					mmap3L = []
-					for r1 in range( len(mmap3)):
-						for c1 in range(len(mmap3[r1]) ):
-							mmap3L.append(mmap3[r1][c1])	
+	def isLessThanThrshldDif(self):
+		sumT = 0
+		for r in range(len(self.mmap1)):
+			for c in range(len(self.mmap1)):
+				sumT += (self.mmap2[r][c] - self.mmap1[r][c])		
 		
-					P_A_mat.append(mmap3L)
-				
-				P_A_S_mat.append(P_A_map)
-
-			P_mat.append(P_A_S_mat)
-
-		rewardL = []	
-		for r1 in range( len(mmap1)):
-			for c1 in range(len(mmap1[r1]) ):
-				rewardL.append(mmap1[r1][c1])	
-	
-		
-		for r1 in range( len(mmap1)):
-			for c1 in range(len(mmap1[r1]) ):
-				self.V_mat = rewardL*numpy.linalg.inv(numpy.identity(12) - P_mat[policy])
-		
-		
-		#V_mat is the new value matrix
-
+		if sumT < self.threshDiff:
+			return True
+		else:
+			return False
 
 	def MDP_Algo(self):
 		
-		self.noChange = False
-		while not self.noChange:
-			self.noChange = True
-			#initial policies were set when the map was created
-			#value map --that is mmap1 gets updated only here
-			self.setValueMap = True
+		self.calculateNewRewardsPolicies()
+		self.mmap1 = deepcopy(self.mmap2)
+		
+		for itr in range(self.maxI):
+			self.calculateNewRewardsPolicies()
 			
-			policy = 1
-			self.policyIteration(policy)
-			
+			if self.isLessThanThrshldDif():
+				break
+	
 			tempMap = deepcopy(self.mmap1)
 			self.mmap1 = deepcopy(self.mmap2)
 			self.mmap2 = []
 			self.createMap(self.mmap2, 0, False)
-			
-			self.setValueMap = False
-			#policy map is updated only here
-			policy = self.policyImprovement()
+	
 			#what happens in the last iteration?
-			#print self.noChange			
-			
-	#policy evaluation	
-	def policyImprovement(self):
+	
+	def calculateNewRewardsPolicies(self):
 		dF = self.config["discount_factor"]
 		
 		for r in range ( len (self.mmap1) ):
@@ -255,8 +170,6 @@ class MDP:
 					continue
 				if self.goal_r == r and self.goal_c ==  c:
 					continue
-				
-				QBest = self.mmap1[r][c]				
 
 				#act
 					#forward   backward   left      right 
@@ -270,13 +183,7 @@ class MDP:
 				#for every action there is one reward
 				actnRwrd = []
 				for a in range( len ( self.act ) ):
-					if self.setValueMap and a != self.policyMap[r][c]:
-						continue
-					#0 -- south
-					#1 -- north
-					#2 -- west
-					#3 -- east
-					
+					#rwrd_allDrctns_gvnActn = []
 					probRwrd = []	
 					for d in range(len(self.act[a]) ):
 						movRow = r + self.act[a][d][0] #for eg: moving forward with action north
@@ -308,28 +215,26 @@ class MDP:
 					for pr in range( len(probRwrd) ):
 						actionRwrd_i += probRwrd[pr]
 					actnRwrd.append(actionRwrd_i)
-					
-					
-					if self.setValueMap:
-						#print "setting mmap1"
-						#print actnRwrd[0]
-						self.mmap2[r][c] = actnRwrd[0]
-						break				
+					#print "len(actnRwrd)"
+					#print len(actnRwrd)
 
-					#all this is executed only when setValueMap is false bcuz we break early if not.		
-					Qsa = actnRwrd[0] #this will only be 1 when we execute the following if stmt		
-			
-					if Qsa > QBest:
-						#print "action"
-						#print a
-						self.policyMap[r][c] = a
-						QBest = Qsa
-						self.noChange = False
-						print self.noChange
+				maxRwrd = 0
+				maxRwrdA = 0
+				for mr in range(len(actnRwrd)):
+					if actnRwrd[mr] > maxRwrd:
+						maxRwrdA = mr
+						maxRwrd = actnRwrd[mr]
 
-						return policy
-
-
+				self.mmap2[r][c] = maxRwrd
+				if maxRwrdA == 0:
+					self.policyMap[r][c] = "S"
+				elif maxRwrdA == 1:
+					self.policyMap[r][c] = "N"
+				elif maxRwrdA == 2:
+					self.policyMap[r][c] = "W"
+				else:
+					self.policyMap[r][c] = "E"
+				
 		print np.reshape(self.mmap1, (self.row, self.column))
 		print "\n"
 		print np.reshape(self.mmap2, (self.row, self.column))
